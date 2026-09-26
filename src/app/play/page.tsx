@@ -1084,7 +1084,7 @@ function PlayPageClient() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentEpisodeIndex, detail, artPlayerRef.current]);
+  }, [currentEpisodeIndex, detail]);
 
   // 清理定时器
   useEffect(() => {
