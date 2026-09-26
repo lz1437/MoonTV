@@ -50,13 +50,20 @@ export async function GET(request: Request) {
 
   try {
     // 使用 search_subjects 接口（recent_hot 已失效返回400）
-    const doubanType = kind === 'tv' ? 'tv' : 'movie';
-    const tagMap: Record<string, string> = {
-      movie: '热门',
-      tv: '热门剧集',
-      show: '热门综艺',
-    };
-    const tag = tagMap[category] || category || '热门';
+    // 首页传参：kind=movie&category=热门 / kind=tv&category=tv / kind=tv&category=show
+    let doubanType: string;
+    let tag: string;
+
+    if (kind === 'movie') {
+      doubanType = 'movie';
+      tag = '热门';
+    } else if (category === 'show') {
+      doubanType = 'tv';
+      tag = '综艺';
+    } else {
+      doubanType = 'tv';
+      tag = '热门';
+    }
 
     const target = `https://movie.douban.com/j/search_subjects?type=${doubanType}&tag=${encodeURIComponent(tag)}&sort=recommend&page_limit=${pageLimit}&page_start=${pageStart}`;
 
