@@ -217,7 +217,7 @@ function PlayPageClient() {
         batchSources.map(async (source) => {
           try {
             // 检查是否有第一集的播放地址
-            if (!source.episodes || source.episodes.length === 0) {
+            if (!source.episodes || source.episodes.length === 0 || !source.episodes[0]) {
               console.warn(`播放源 ${source.source_name} 没有可用的播放地址`);
               return null;
             }
@@ -630,7 +630,7 @@ function PlayPageClient() {
         // 处理搜索结果，根据规则过滤
         const results = data.results.filter(
           (result: SearchResult) =>
-            result.title.replaceAll(' ', '').toLowerCase() ===
+            result.title && result.title.replaceAll(' ', '').toLowerCase() ===
               videoTitleRef.current.replaceAll(' ', '').toLowerCase() &&
             (videoYearRef.current
               ? result.year.toLowerCase() === videoYearRef.current.toLowerCase()
@@ -893,7 +893,7 @@ function PlayPageClient() {
   const handleEpisodeChange = (episodeNumber: number) => {
     if (episodeNumber >= 0 && episodeNumber < totalEpisodes) {
       // 在更换集数前保存当前播放进度
-      if (artPlayerRef.current && artPlayerRef.current.paused) {
+      if (artPlayerRef.current) {
         saveCurrentPlayProgress();
       }
       setCurrentEpisodeIndex(episodeNumber);
@@ -904,7 +904,7 @@ function PlayPageClient() {
     const d = detailRef.current;
     const idx = currentEpisodeIndexRef.current;
     if (d && d.episodes && idx > 0) {
-      if (artPlayerRef.current && !artPlayerRef.current.paused) {
+      if (artPlayerRef.current) {
         saveCurrentPlayProgress();
       }
       setCurrentEpisodeIndex(idx - 1);
@@ -915,7 +915,7 @@ function PlayPageClient() {
     const d = detailRef.current;
     const idx = currentEpisodeIndexRef.current;
     if (d && d.episodes && idx < d.episodes.length - 1) {
-      if (artPlayerRef.current && !artPlayerRef.current.paused) {
+      if (artPlayerRef.current) {
         saveCurrentPlayProgress();
       }
       setCurrentEpisodeIndex(idx + 1);
