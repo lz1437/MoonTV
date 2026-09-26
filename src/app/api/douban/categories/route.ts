@@ -40,29 +40,72 @@ async function fetchDoubanData(url: string): Promise<{
 
 export const runtime = 'edge';
 
+// 电视剧二级分类映射到豆瓣tag
+const tvTagMap: Record<string, string> = {
+  tv: '热门',
+  tv_domestic: '国产剧',
+  tv_american: '美剧',
+  tv_japanese: '日剧',
+  tv_korean: '韩剧',
+  tv_animation: '动漫',
+  tv_documentary: '纪录片',
+};
+
+// 综艺二级分类映射
+const showTagMap: Record<string, string> = {
+  show: '综艺',
+  show_domestic: '综艺',
+  show_foreign: '综艺',
+};
+
+// 电影一级分类映射
+const moviePrimaryTagMap: Record<string, string> = {
+  热门: '热门',
+  最新: '最新',
+  豆瓣高分: '豆瓣高分',
+  冷门佳片: '冷门佳片',
+};
+
+// 电影二级地区映射
+const movieRegionTagMap: Record<string, string> = {
+  全部: '',
+  华语: '华语',
+  欧美: '欧美',
+  韩国: '韩国',
+  日本: '日本',
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const kind = searchParams.get('kind') || 'movie';
   const category = searchParams.get('category') || '热门';
+  const type = searchParams.get('type') || '';
   const pageLimit = parseInt(searchParams.get('limit') || '20');
   const pageStart = parseInt(searchParams.get('start') || '0');
 
   try {
-    // 使用 search_subjects 接口（recent_hot 已失效返回400）
-    // 首页传参：kind=movie&category=热门 / kind=tv&category=tv / kind=tv&category=show
     let doubanType: string;
     let tag: string;
 
     if (kind === 'movie') {
       doubanType = 'movie';
-      tag = '热门';
+      // 电影：一级分类 + 二级地区组合tag
+      const primaryTag = moviePrimaryTagMap[category] || '热门';
+      const regionTag = movieRegionTagMap[type] || '';
+      tag = regionTag ? `${regionTag}` : primaryTag;
+      // 如果选了地区，豆瓣的tag是组合形式如"华语 热门"，但search_subjects只支持单个tag
+      // 所以优先用地区tag，如果是"全部"则用一级分类tag
+      if (regionTag && type !== '全部') {
+        tag = regionTag;
+      }
     } else if (category === 'show') {
       doubanType = 'tv';
-      tag = '综艺';
+      tag = showTagMap[type] || '综艺';
     } else {
+      // 电视剧
       doubanType = 'tv';
-      tag = '热门';
+      tag = tvTagMap[type] || '热门';
     }
 
     const target = `https://movie.douban.com/j/search_subjects?type=${doubanType}&tag=${encodeURIComponent(tag)}&sort=recommend&page_limit=${pageLimit}&page_start=${pageStart}`;
