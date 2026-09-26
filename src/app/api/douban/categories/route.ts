@@ -76,7 +76,8 @@ const movieRegionTagMap: Record<string, string> = {
   日本: '日本',
 };
 
-export async function GET(request: Request) {
+export async function GET(request: Request, context: ExecutionContext) {
+  const ctx = context;
   const { searchParams } = new URL(request.url);
 
   const kind = searchParams.get('kind') || 'movie';
@@ -86,6 +87,14 @@ export async function GET(request: Request) {
   const pageStart = parseInt(searchParams.get('start') || '0');
 
   try {
+    // 先检查Cloudflare缓存
+    const cacheKey = new Request(request.url, { method: 'GET' });
+    const cache = caches.default;
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     let doubanType: string;
     let tag: string;
 
@@ -128,11 +137,14 @@ export async function GET(request: Request) {
     };
 
     const cacheTime = await getCacheTime();
-    return NextResponse.json(response, {
+    const jsonResponse = NextResponse.json(response, {
       headers: {
         'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
       },
     });
+    // 写入Cloudflare缓存
+    ctx.waitUntil(cache.put(cacheKey, jsonResponse.clone()));
+    return jsonResponse;
   } catch (error) {
     return NextResponse.json(
       { error: '获取豆瓣数据失败', details: (error as Error).message },
