@@ -12,11 +12,7 @@ async function fetchDoubanData(url: string): Promise<{
     url: string;
   }>;
 }> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
   const fetchOptions = {
-    signal: controller.signal,
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -25,17 +21,22 @@ async function fetchDoubanData(url: string): Promise<{
     },
   };
 
-  try {
-    const response = await fetch(url, fetchOptions);
-    clearTimeout(timeoutId);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+  // 最多重试2次
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (attempt === 1) throw error;
+      await new Promise((r) => setTimeout(r, 500));
     }
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
   }
+  throw new Error('请求失败');
 }
 
 export const runtime = 'edge';
@@ -47,7 +48,7 @@ const tvTagMap: Record<string, string> = {
   tv_american: '美剧',
   tv_japanese: '日剧',
   tv_korean: '韩剧',
-  tv_animation: '动漫',
+  tv_animation: '日本动画',
   tv_documentary: '纪录片',
 };
 
