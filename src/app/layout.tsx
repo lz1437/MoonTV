@@ -27,9 +27,26 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   return {
-    title: siteName,
-    description: '影视聚合',
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description: `${siteName} - 影视聚合搜索，免费观看电影、电视剧、综艺`,
     manifest: '/manifest.json',
+    openGraph: {
+      type: 'website' as const,
+      title: siteName,
+      description: `${siteName} - 影视聚合搜索`,
+    },
+    twitter: {
+      card: 'summary' as const,
+      title: siteName,
+      description: `${siteName} - 影视聚合搜索`,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
